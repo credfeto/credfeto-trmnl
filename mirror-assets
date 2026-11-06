@@ -1,0 +1,33 @@
+#! /bin/sh
+# Mirrors the TRMNL framework CSS/JS, themes, fonts and chart/map libraries into
+# ./assets so LaraPaper renders screens without reaching trmnl.com.
+# Usage: ./mirror-assets [framework-version]   (default from .env or 3.4.6)
+set -eu
+BASEDIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+cd "$BASEDIR"
+VER=${1:-$(sed -n 's/^TRMNL_FRAMEWORK_VERSION=//p' .env 2>/dev/null | tail -n 1)}
+VER=${VER:-3.4.6}
+SRC=https://trmnl.com
+OUT=assets
+mkdir -p "$OUT"
+
+get() {
+    mkdir -p "$OUT/$(dirname "$1")"
+    curl -fsSL --retry 3 -o "$OUT/$1.tmp" "$SRC/$1" && mv "$OUT/$1.tmp" "$OUT/$1"
+}
+
+get "css/$VER/plugins.css"
+get "js/$VER/plugins.js"
+for theme in black-and-yellow dark white-and-red; do
+    get "css/$VER/themes/$theme-theme.css"
+done
+grep -ho 'url("/fonts/[^")]*")' "$OUT/css/$VER/plugins.css" "$OUT"/css/"$VER"/themes/*.css \
+    | sed 's#url("/##; s#")##' | sort -u | while read -r font; do
+    get "$font"
+done
+get js/maplibre-gl/5.24.0/maplibre-gl.js
+get js/maplibre-gl/5.24.0/maplibre-gl.css
+get js/highcharts/12.3.0/highcharts.js
+get js/highcharts/12.3.0/pattern-fill.js
+get js/chartkick/5.0.1/chartkick.min.js
+echo "mirror-assets: framework $VER mirrored to $OUT/"

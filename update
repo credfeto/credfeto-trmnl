@@ -1,0 +1,25 @@
+#! /bin/sh
+# Pull the repo, refresh the asset mirror, open the ports in firewalld to
+# ALLOWED_SOURCES and (re)start the stack. Run as root from the checkout.
+set -eu
+BASEDIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+cd "$BASEDIR"
+[ -f .env ] || { echo "update: create .env from example.env first" >&2; exit 1; }
+env_value() { sed -n "s/^$1=//p" .env | tail -n 1; }
+
+git pull --ff-only
+./mirror-assets || echo "update: asset mirror refresh failed, keeping the existing copy" >&2
+[ -f "assets/css/$(env_value TRMNL_FRAMEWORK_VERSION)/plugins.css" ] || { echo "update: no asset mirror" >&2; exit 1; }
+
+firewall-cmd --state >/dev/null 2>&1 || { echo "update: firewalld is not running" >&2; exit 1; }
+for port in $(env_value APP_PORT) $(env_value ASSETS_PORT); do
+    for src in $(env_value ALLOWED_SOURCES); do
+        case "$src" in *:*) family=ipv6 ;; *) family=ipv4 ;; esac
+        rule="rule family=\"$family\" source address=\"$src\" port port=\"$port\" protocol=\"tcp\" accept"
+        firewall-cmd --permanent --query-rich-rule="$rule" >/dev/null 2>&1 \
+            || firewall-cmd --permanent --add-rich-rule="$rule" >/dev/null
+    done
+done
+firewall-cmd --reload >/dev/null
+
+docker compose pull && docker compose up -d

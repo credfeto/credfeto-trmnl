@@ -1,0 +1,63 @@
+---
+# TRMNL BYOS: LaraPaper serves the device API (/api/setup, /api/display, /api/log)
+# and the web UI; a small nginx serves a local mirror of the TRMNL framework
+# CSS/JS/fonts so screens render without fetching anything from trmnl.com.
+#
+# Host networking, not published ports: published Docker ports bypass firewalld,
+# so ./update opens APP_PORT and ASSETS_PORT in firewalld only to ALLOWED_SOURCES
+# (the Traefik hosts, which publish trmnl.markridgwell.com and
+# trmnl-assets.markridgwell.com, internal only).
+name: credfeto-trmnl
+
+services:
+  watchtower:
+    image: nickfedor/watchtower:latest
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    environment:
+      WATCHTOWER_NOTIFICATIONS_HOSTNAME: trmnl
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_SCHEDULE: "${WATCHTOWER_SCHEDULE:-0 47 * * * *}"
+
+  larapaper:
+    image: ghcr.io/usetrmnl/larapaper:${LARAPAPER_TAG:-latest}
+    container_name: larapaper
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      APP_KEY: ${APP_KEY:?set APP_KEY in .env}
+      APP_URL: ${APP_URL:?set APP_URL in .env}
+      # Behind the Traefik pair, which terminates HTTPS
+      FORCE_HTTPS: ${FORCE_HTTPS:-true}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/London}
+      PHP_OPCACHE_ENABLE: "1"
+      DB_DATABASE: database/storage/database.sqlite
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-1}
+      # Local framework assets instead of https://trmnl.com
+      TRMNL_BLADE_FRAMEWORK_BASE_URL: ${ASSETS_URL:?set ASSETS_URL in .env}
+      TRMNL_BLADE_FRAMEWORK_VERSION: ${TRMNL_FRAMEWORK_VERSION:-3.4.6}
+      TRMNL_BLADE_MAPLIBRE_JS_URL: ${ASSETS_URL}/js/maplibre-gl/5.24.0/maplibre-gl.js
+      TRMNL_BLADE_MAPLIBRE_CSS_URL: ${ASSETS_URL}/js/maplibre-gl/5.24.0/maplibre-gl.css
+      TRMNL_BLADE_HIGHCHARTS_JS_URL: ${ASSETS_URL}/js/highcharts/12.3.0/highcharts.js
+      TRMNL_BLADE_CHARTKICK_JS_URL: ${ASSETS_URL}/js/chartkick/5.0.1/chartkick.min.js
+      TRMNL_BLADE_HIGHCHARTS_PATTERN_FILL_URL: ${ASSETS_URL}/js/highcharts/12.3.0/pattern-fill.js
+    volumes:
+      - database:/var/www/html/database/storage
+      - generated:/var/www/html/storage/app/public/images/generated
+
+  assets:
+    image: nginx:alpine
+    container_name: trmnl-assets
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      ASSETS_PORT: ${ASSETS_PORT:-8081}
+    volumes:
+      - ./assets:/usr/share/nginx/html:ro
+      - ./assets-nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+
+volumes:
+  database:
+  generated:
