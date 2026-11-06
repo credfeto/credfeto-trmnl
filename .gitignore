@@ -374,7 +374,3 @@ node_modules
 
 # Trivy
 result.json
-
-# credfeto-trmnl
-.env
-assets/
