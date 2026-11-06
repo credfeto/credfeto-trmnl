@@ -30,4 +30,7 @@ get js/maplibre-gl/5.24.0/maplibre-gl.css
 get js/highcharts/12.3.0/highcharts.js
 get js/highcharts/12.3.0/pattern-fill.js
 get js/chartkick/5.0.1/chartkick.min.js
+# nginx in the assets container runs as an unprivileged user, and root's umask
+# on these hosts (027) would leave the files unreadable to it.
+chmod -R a+rX "$OUT"
 echo "mirror-assets: framework $VER mirrored to $OUT/"

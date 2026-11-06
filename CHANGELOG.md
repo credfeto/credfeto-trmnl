@@ -14,6 +14,7 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 - LaraPaper TRMNL server stack (docker-compose, watchtower, local TRMNL framework asset mirror, firewalld rules for the Traefik hosts)
 - ai/global github-cli instructions: `cfwf issue view --comments` (issue plus comments in one read) and `cfwf comment view --comment-id` (one comment by id)
 ### Fixed
+- mirror-assets makes the asset mirror world-readable so nginx can serve it under a 027 umask
 ### Changed
 ### Deprecated
 ### Removed
