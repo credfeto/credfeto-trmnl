@@ -26,6 +26,10 @@ services:
     container_name: larapaper
     restart: unless-stopped
     network_mode: host
+    # Cap the chromium renderer: it leaks processes and memory and once wedged the VM (OOM thrash).
+    mem_limit: ${LARAPAPER_MEM_LIMIT:-1536m}
+    memswap_limit: ${LARAPAPER_MEM_LIMIT:-1536m}
+    pids_limit: ${LARAPAPER_PIDS_LIMIT:-256}
     environment:
       APP_KEY: ${APP_KEY:?set APP_KEY in .env}
       APP_URL: ${APP_URL:?set APP_URL in .env}
