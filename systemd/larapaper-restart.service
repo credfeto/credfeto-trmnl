@@ -1,0 +1,8 @@
+[Unit]
+Description=Restart larapaper to clear leaked chromium processes
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker restart larapaper

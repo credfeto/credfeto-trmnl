@@ -1,0 +1,8 @@
+[Unit]
+Description=Restart larapaper every 6 hours (chromium leak stopgap)
+
+[Timer]
+OnCalendar=*-*-* 00/6:17:00
+
+[Install]
+WantedBy=timers.target

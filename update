@@ -23,3 +23,16 @@ done
 firewall-cmd --reload >/dev/null
 
 docker compose pull && docker compose up -d
+
+# larapaper's chromium renderer leaks processes and memory until it thrashes
+# inside its mem_limit (hundreds of PIDs, constant cgroup OOM kills) within
+# hours; a restart every 6 hours keeps it healthy until the leak is fixed.
+units_changed=""
+for unit in larapaper-restart.service larapaper-restart.timer; do
+    if ! cmp -s "systemd/$unit" "/etc/systemd/system/$unit"; then
+        install -m 644 "systemd/$unit" "/etc/systemd/system/$unit"
+        units_changed=1
+    fi
+done
+[ -z "$units_changed" ] || systemctl daemon-reload
+systemctl enable --now larapaper-restart.timer >/dev/null 2>&1

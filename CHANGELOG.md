@@ -11,6 +11,7 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 ## [Unreleased]
 ### Security
 ### Added
+- larapaper-restart.timer, installed and enabled by ./update: restarts larapaper every 6 hours (00:17/06:17/12:17/18:17) because its chromium renderer leaks processes and memory until it thrashes inside the container memory limit (786 PIDs, 1.45 of 1.5 GiB, ~60 cgroup OOM kills an hour, swap full on 2026-11-13)
 - LaraPaper TRMNL server stack (docker-compose, watchtower, local TRMNL framework asset mirror, firewalld rules for the Traefik hosts)
 - ai/global github-cli instructions: `cfwf issue view --comments` (issue plus comments in one read) and `cfwf comment view --comment-id` (one comment by id)
 ### Fixed
