@@ -18,6 +18,7 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 - larapaper has mem_limit/memswap_limit 1536m and pids_limit 256 (overridable with LARAPAPER_MEM_LIMIT / LARAPAPER_PIDS_LIMIT) so a chromium leak can no longer OOM-thrash the host
 - mirror-assets makes the asset mirror world-readable so nginx can serve it under a 027 umask
 ### Changed
+- SDK - Updated DotNet SDK to 11.0.100
 ### Deprecated
 ### Removed
 ### Deployment Changes
