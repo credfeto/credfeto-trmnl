@@ -12,6 +12,7 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 ### Security
 ### Added
 ### Fixed
+- Disabled core dumps for larapaper (`ulimits: core: 0`) so chromium crashes no longer fill the root filesystem with core files
 ### Changed
 ### Deprecated
 ### Removed

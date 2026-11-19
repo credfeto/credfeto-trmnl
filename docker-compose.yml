@@ -32,6 +32,11 @@ services:
     # pids counts threads too: a normal render burst runs chromium past 256 (pthread_create EAGAIN,
     # core dumps, "Navigation timeout"), so the cap is set well above that and still stops a runaway.
     pids_limit: ${LARAPAPER_PIDS_LIMIT:-1024}
+    # No core files: chromium crashes several times an hour and each core is ~17 MB, which filled the
+    # small root fs via /var/lib/systemd/coredump. systemd-coredump honours RLIMIT_CORE=0 and only
+    # logs the crash, so the crash is still visible in the journal.
+    ulimits:
+      core: 0
     environment:
       APP_KEY: ${APP_KEY:?set APP_KEY in .env}
       APP_URL: ${APP_URL:?set APP_URL in .env}
