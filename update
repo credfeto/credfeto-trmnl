@@ -36,3 +36,9 @@ for unit in larapaper-restart.service larapaper-restart.timer; do
 done
 [ -z "$units_changed" ] || systemctl daemon-reload
 systemctl enable --now larapaper-restart.timer >/dev/null 2>&1
+
+# Egress lockdown (firewalld policies); observation mode unless
+# TRMNL_FIREWALL_ENFORCE=true in .env. Runs after the containers exist,
+# because Docker creates the docker zone the policies refer to. See README.md,
+# "Host firewall".
+"$BASEDIR/firewall/configure"
