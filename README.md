@@ -30,18 +30,20 @@ Open `APP_URL`, create the admin account, then set `REGISTRATION_ENABLED=0` and 
 
 Ingress is the firewalld rich rules above: larapaper and trmnl-assets use host networking, so their ports are ordinary host ports that firewalld filters (only `ALLOWED_SOURCES`, the Traefik hosts). The device reaches LaraPaper through `trmnl.markridgwell.com`, never directly.
 
-`update` also runs `firewall/configure`, which locks egress down with firewalld policies, the same way as the DNS servers:
+`update` also runs `firewall/configure`, which locks egress down with one nftables table, `inet trm_egress`, built and loaded by `firewall/egress`:
 
-| Policy              | Traffic                     | Allowed                                                                                                                                                                       |
+| Chain               | Traffic                     | Allowed                                                                                                                                                                       |
 |---------------------|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `trm-egress`        | host -> anywhere            | DNS to the fleet's DNS servers, NTP to the router, HTTPS to the proxies (Home Assistant, the asset mirror), journald uploads to monitoring, GitHub, ghcr.io, Docker Hub, Cloudflare, trmnl.com (`./mirror-assets`, LaraPaper's firmware and device model checks), the firmware images on S3, chaotic-aur, pkgstats, the Arch WKD, ICMP |
-| `trm-egress-docker` | containers -> outside world | DNS, HTTPS to the proxies, ghcr.io, Docker Hub and Cloudflare (Watchtower)                                                                                                    |
+| `host_out`          | host -> anywhere            | DNS to the fleet's DNS servers, NTP to the router, HTTPS to the proxies (Home Assistant, the asset mirror), journald uploads to monitoring, GitHub, ghcr.io, Docker Hub, Cloudflare, trmnl.com (`./mirror-assets`, LaraPaper's firmware and device model checks), the firmware images on S3, chaotic-aur, pkgstats, the Arch WKD, ICMP |
+| `docker_fwd`        | containers -> outside world | DNS, HTTPS to the proxies, ghcr.io, Docker Hub and Cloudflare (Watchtower)                                                                                                    |
 
 Because LaraPaper runs on the host network, its plugin fetches are host egress: a polling plugin whose URL is not behind the proxies needs a rule in `firewall/configure`.
 
+The whole table, address sets included, is replaced in a single `nft -f` transaction: a refresh never makes firewalld reload, and a ruleset that fails to load leaves the previous one in place. firewalld keeps the host's base zones and never sees this table.
+
 Two timers keep it current:
 
-* `trmnl-egress-refresh.timer` (every 10 minutes) refreshes the firewalld ipsets for destinations without a stable address: names resolved from DNS, plus GitHub's and Cloudflare's published ranges (`firewall/github-egress-ranges` and `firewall/cloudflare-egress-ranges`).
+* `trmnl-egress-refresh.timer` (30 seconds after boot, then every 10 minutes) rebuilds the table's address sets for destinations without a stable address: names resolved from DNS (a name that does not resolve keeps its last good addresses), plus GitHub's and Cloudflare's published ranges (`firewall/github-egress-ranges` and `firewall/cloudflare-egress-ranges`). It only loads the table when it differs from the loaded one.
 * `trmnl-firewall-sync.timer` (every 15 minutes) pulls the checkout and re-runs `firewall/configure` when anything under `firewall/` changed since the commit it last applied. Container changes still wait for `update`.
 
 The `Repo: Update egress ranges` workflow regenerates the two range files daily and commits any change to main, refusing a list that has shrunk by more than a fifth.
@@ -52,7 +54,11 @@ The `Repo: Update egress ranges` workflow regenerates the two range files daily 
 sudo journalctl -k --since -7d | grep -E 'trm-egress(-docker)?-unmatched'
 ```
 
-then set `TRMNL_FIREWALL_ENFORCE=true` and run `./update`.
+then set `TRMNL_FIREWALL_ENFORCE=true` and run `./update`. To see the live egress rules:
+
+```sh
+sudo nft list table inet trm_egress
+```
 
 ## Build Status
 

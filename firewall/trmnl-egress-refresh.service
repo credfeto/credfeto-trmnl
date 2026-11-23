@@ -1,11 +1,11 @@
 [Unit]
-Description=Refresh the TRMNL host's dynamic egress firewalld ipsets
+Description=Refresh and load the TRMNL host's egress nftables table
 Wants=network-online.target
-After=network-online.target firewalld.service
+After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/bin/trmnl-refresh-egress-ipsets
+ExecStart=/usr/local/bin/trmnl-egress
 ProtectSystem=full
 ProtectHome=true
 NoNewPrivileges=true
