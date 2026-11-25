@@ -24,7 +24,7 @@ services:
   larapaper:
     image: ghcr.io/usetrmnl/larapaper:${LARAPAPER_TAG:-latest}
     container_name: larapaper
-    restart: unless-stopped
+    restart: always
     network_mode: host
     # Cap the chromium renderer: it leaks processes and memory and once wedged the VM (OOM thrash).
     mem_limit: ${LARAPAPER_MEM_LIMIT:-1536m}
@@ -61,7 +61,7 @@ services:
   assets:
     image: nginx:alpine
     container_name: trmnl-assets
-    restart: unless-stopped
+    restart: always
     network_mode: host
     environment:
       ASSETS_PORT: ${ASSETS_PORT:-8081}

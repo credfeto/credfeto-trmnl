@@ -16,9 +16,11 @@ Please ADD ALL Changes to the UNRELEASED SECTION and not a specific release
 - Host egress lockdown (`firewall/configure`, run by `update`): firewalld policies limit what the host (including LaraPaper on the host network) and the Watchtower container may connect to, with CDN-fronted destinations kept in ipsets refreshed every 10 minutes. `trmnl-firewall-sync.timer` re-applies it when the firewall config changes, and the daily `Repo: Update egress ranges` workflow refreshes the GitHub and Cloudflare ranges. Observation mode (log unmatched traffic, drop nothing) until `TRMNL_FIREWALL_ENFORCE=true`
 ### Added
 ### Fixed
+- The egress script takes a lock and writes its resolved-address cache to a unique temp file, so the refresh timer and the firewall sync starting together no longer fail with FileNotFoundError over the shared .tmp file
 - `./update` now re-runs itself after `git pull`, so changes to the update script take effect on the same run instead of the next one
 - Disabled core dumps for larapaper (`ulimits: core: 0`) so chromium crashes no longer fill the root filesystem with core files
 ### Changed
+- All containers use `restart: always` instead of `unless-stopped`, so a container stopped during a reboot or daemon restart is always brought back (an unless-stopped container was left down after a clean reboot)
 ### Deprecated
 ### Removed
 ### Deployment Changes
